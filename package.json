@@ -1,0 +1,51 @@
+{
+  "name": "angela-sdk",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Official TypeScript & JavaScript SDK for Angela Games Ecosystem cartridges",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build:types": "tsc -p tsconfig.json --emitDeclarationOnly",
+    "build:cjs": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/cjs/index.js && echo '{\"type\": \"commonjs\"}' > dist/cjs/package.json",
+    "build:esm": "esbuild src/index.ts --bundle --platform=neutral --format=esm --outfile=dist/esm/index.js",
+    "build": "rm -rf dist && npm run build:types && npm run build:cjs && npm run build:esm",
+    "prepublishOnly": "npm run build && npm test",
+    "test": "node --test tests/sdk.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mezbaulanam/angela-js.git"
+  },
+  "homepage": "https://github.com/mezbaulanam/angela-js#readme",
+  "bugs": {
+    "url": "https://github.com/mezbaulanam/angela-js/issues"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "angela",
+    "discord",
+    "games",
+    "sdk",
+    "wasm",
+    "webassembly"
+  ],
+  "author": "Mezbaul Anam",
+  "license": "MIT"
+}
