@@ -1,6 +1,6 @@
 {
   "name": "angela-sdk",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "type": "module",
   "description": "Official TypeScript & JavaScript SDK for Angela Games Ecosystem cartridges",
   "main": "./dist/cjs/index.js",

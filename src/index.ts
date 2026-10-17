@@ -1,5 +1,5 @@
 /**
- * Angela TypeScript & JavaScript SDK (@angela/sdk)
+ * Angela TypeScript & JavaScript SDK (angela-sdk)
  * The official developer kit for Angela Games Ecosystem cartridges.
  */
 
@@ -14,5 +14,5 @@ export * from "./lobby.js";
 export * from "./models.js";
 export * from "./ui.js";
 
-export const VERSION = "0.1.0";
+export const VERSION = "0.2.0";
 

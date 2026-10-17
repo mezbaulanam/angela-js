@@ -57,7 +57,7 @@ Zero external production dependencies. Requires Node 18+ for local tooling.
 In `src/index.ts`:
 
 ```typescript
-import { Game, Button, type Context } from "@angela/sdk";
+import { Game, Button, type Context } from "angela-sdk";
 
 const game = new Game("dice_game");
 
@@ -122,7 +122,7 @@ export function handle(eventStr: string): string {
 In `main.js`:
 
 ```javascript
-const { Game, Button } = require("@angela/sdk");
+const { Game, Button } = require("angela-sdk");
 
 const game = new Game("coin_toss");
 
@@ -373,7 +373,7 @@ ctx.inventory.removeSubItem(ctx.user.id, "sapphire_sardine", 1);
 `ctx.ui.render()` compiles your layout automatically into the mode configured by the server (`AUTO`, `CV2`, or `CLASSIC_EMBED`):
 
 ```typescript
-import { Button } from "@angela/sdk";
+import { Button } from "angela-sdk";
 
 ctx.ui.render({
   title: "⚔️ Boss Raid: Abyssal Hydra",
@@ -405,7 +405,7 @@ import {
   Separator,
   ActionRow,
   Button
-} from "@angela/sdk";
+} from "angela-sdk";
 
 const container = new Container({ accentColor: "#5865F2" })
   .add(
@@ -431,7 +431,7 @@ ctx.ui.renderCv2(container);
 ### Classic Embeds
 
 ```typescript
-import { Embed, Button } from "@angela/sdk";
+import { Embed, Button } from "angela-sdk";
 
 const embed = new Embed({
   title: "🎣 Catch of the Day",
@@ -450,7 +450,7 @@ ctx.ui.renderEmbed(embed, [
 ### Modals & Ephemeral Feedback
 
 ```typescript
-import { TextInput } from "@angela/sdk";
+import { TextInput } from "angela-sdk";
 
 // Open modal
 game.onButton("open_wager", (ctx) => {
@@ -472,6 +472,33 @@ game.onModal("wager_submitted", (ctx) => {
   ctx.ui.replyEphemeral(`Locked in your wager of **${amount} coins**!`);
 });
 ```
+
+### Public Chat Delivery (`sendChat` vs `EDIT_MAIN`)
+
+By default, games edit the existing game message (`target: "EDIT_MAIN"`). This keeps card tables, boards, and casino wheels compact without spamming Discord channels.
+
+For games that announce new rounds, post trivia questions, or announce server-wide events, use `ctx.ui.sendChat(...)` or set `target: "NEW_MESSAGE"`:
+
+```typescript
+// Helper: sends a brand new public message to the channel
+ctx.ui.sendChat({
+  title: "🧠 Trivia Round 1",
+  text: "What is the capital of Australia?",
+  buttons: [
+    new Button({ customId: "ans_canberra", label: "Canberra", style: "primary" }),
+    new Button({ customId: "ans_sydney", label: "Sydney", style: "secondary" }),
+  ]
+});
+
+// Or using string shorthand:
+ctx.ui.sendChat("⚔️ The boss has spawned! Click below to join the raid!");
+```
+
+| Method / Target | Visibility | Replaces Previous? | Best Used For |
+|---|---|---|---|
+| `target: "EDIT_MAIN"` (Default) | Public | Yes (Edits main message) | Lobbies, boards, scoreboards, casino wheels |
+| `ctx.ui.sendChat(...)` / `target: "NEW_MESSAGE"` | Public | No (Sends new message) | Trivia rounds, event announcements, elimination logs |
+| `ctx.ui.replyEphemeral(...)` | Only Clicker | No (Private reply) | Secret hands, balance checks, validation errors |
 
 ---
 
@@ -495,7 +522,7 @@ const scene = ctx.canvas.create({
 Setting a `cacheKey` on static background layers caches the rendered graphic on disk — future turns skip all background pixel rendering and composite dynamic elements directly on top:
 
 ```typescript
-import { Button } from "@angela/sdk";
+import { Button } from "angela-sdk";
 
 // Static background layer (cached on disk)
 const bg = scene.layer("background", "ocean_base_v1");
@@ -626,17 +653,55 @@ ctx.media.searchGif("victory celebration", "on_gif_found");
 
 ---
 
-## HTTP & Discord Utilities
+## HTTP & Safe Network Access
 
-### Safe Outbound HTTP
+### Safe Outbound HTTP (`ctx.http.get` / `ctx.http.post`)
+
+Angela games execute inside a secure WebAssembly (WASM) sandbox. Because the sandbox **does not possess raw POSIX OS sockets**, synchronous network calls (such as `fetch`, `axios`, `got`, or `node:http`) **cannot run** and will fail.
+
+All network requests must be requested through Angela's host-mediated **two-phase HTTP gateway**:
+1. **Phase 1 (Request)**: Your cartridge registers an intent via `ctx.http.get(url, { callback: "handler_name" })`.
+2. **Phase 2 (Callback)**: Angela's host verifies SSRF policy, queries the API safely, and delivers parsed JSON to `ctx.args.callbackData`.
 
 ```typescript
 game.onCommand("trivia", (ctx) => {
-  ctx.http.get("https://opentdb.com/api.php?amount=1&type=multiple", {
+  // Phase 1: Request data via host proxy
+  ctx.http.get("https://the-trivia-api.com/v2/questions?limit=1", {
     callback: "on_trivia_received"
   });
 });
+
+game.onCallback("on_trivia_received", (ctx) => {
+  // Phase 2: Host delivers payload
+  const questions = ctx.args.callbackData as any[];
+  if (questions && questions.length > 0) {
+    const q = questions[0];
+    ctx.ui.sendChat({
+      title: "🧠 Question Time!",
+      text: q.question.text,
+      buttons: [
+        new Button({ customId: "ans_correct", label: q.correctAnswer, style: "primary" }),
+        new Button({ customId: "ans_wrong", label: q.incorrectAnswers[0], style: "secondary" }),
+      ]
+    });
+  }
+});
 ```
+
+---
+
+## Sandboxing & Dependency Constraints
+
+To guarantee zero latency spikes, airtight security, and deterministic runs across all Discord nodes:
+
+1. **Pure JavaScript / TypeScript**: Cartridges must use standard JS built-ins (Arrays, Maps, Math, JSON, Date, RegExp).
+2. **No Native C/C++ Addons**: Node addons (`.node` binaries) or packages relying on libuv/native OS handles (`fs`, `net`, `child_process`) are not supported in WASM.
+3. **Official SDK Only**: Only import `angela-sdk`. All interactions with Discord, player balances, inventory, and network go through `ctx`.
+4. **State Persistence**: Cartridges cannot write to local disk. State across turns is stored in `ctx.state` or `ctx.storage`.
+
+---
+
+## Discord Utilities
 
 ### Channel Management & Chat Listening
 
@@ -665,7 +730,7 @@ my_game/
 ├── manifest.json       # Game metadata, config schema, target slot
 ├── src/
 │   └── index.ts        # TypeScript entry script exporting handle
-├── package.json        # Dependencies (devDependencies: @angela/sdk, typescript)
+├── package.json        # Dependencies (devDependencies: angela-sdk, typescript)
 └── assets/             # Game sprites referenced by ctx.canvas.sprite()
     ├── boss.png
     └── coin.png

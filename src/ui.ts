@@ -498,10 +498,49 @@ export class UIContext {
     return intent;
   }
 
+  public sendChat(textOrOptions: string | {
+    text?: string;
+    title?: string;
+    subtitle?: string;
+    buttons?: (Button | Record<string, unknown>)[];
+    selects?: (Select | Record<string, unknown>)[];
+    embed?: Embed | Record<string, unknown>;
+    image?: string | CanvasScene;
+    thumbnail?: string;
+    accentColor?: string | number;
+  }): Intent {
+    if (typeof textOrOptions === "string") {
+      return this.render({ bodyLines: [textOrOptions], ephemeral: false, target: "NEW_MESSAGE" });
+    }
+    if (textOrOptions.embed) {
+      return this.renderEmbed(textOrOptions.embed, {
+        components: textOrOptions.buttons,
+        ephemeral: false,
+        target: "NEW_MESSAGE",
+      });
+    }
+    return this.render({
+      title: textOrOptions.title,
+      subtitle: textOrOptions.subtitle,
+      bodyLines: textOrOptions.text ? [textOrOptions.text] : [],
+      buttons: textOrOptions.buttons,
+      selects: textOrOptions.selects,
+      image: textOrOptions.image,
+      thumbnail: textOrOptions.thumbnail,
+      accentColor: textOrOptions.accentColor,
+      ephemeral: false,
+      target: "NEW_MESSAGE",
+    });
+  }
+
+  public sendMessage = this.sendChat.bind(this);
+
   // Snake_case aliases
   public render_cv2 = this.renderCv2.bind(this);
   public render_embed = this.renderEmbed.bind(this);
   public reply_ephemeral = this.replyEphemeral.bind(this);
   public open_modal = this.openModal.bind(this);
+  public send_chat = this.sendChat.bind(this);
+  public send_message = this.sendMessage.bind(this);
 }
 
