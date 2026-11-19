@@ -180,6 +180,12 @@ test("Sub-contexts generate correct intents", () => {
   ctx.storage.set("my_key", 12345);
   assert.equal(ctx.storage.get("my_key"), 12345);
   ctx.storage.setCooldown(ctx.user.id, 60);
+  ctx.storage.recordStat(ctx.user.id, "wins", 1);
+  ctx.channel.create({ name: "game-test", ttlMinutes: 30 });
+  ctx.channel.delete(12345);
+  ctx.perms.set({ target: 0, deny: ["SEND_MESSAGES"] });
+  ctx.timer.schedule(45, "timeout_cb");
+  ctx.timer.cancel();
   ctx.sleep(10, "wake_cb");
 
   const res = ctx.toResponse();
@@ -193,6 +199,9 @@ test("Sub-contexts generate correct intents", () => {
   assert.ok(ops.includes("CHANNEL_LOCK"));
   assert.ok(ops.includes("LISTEN_MESSAGES"));
   assert.ok(ops.includes("STORAGE_MUTATE"));
+  assert.ok(ops.includes("CHANNEL_OP"));
+  assert.ok(ops.includes("PERMISSION_OVERWRITE"));
+  assert.ok(ops.includes("TIMER_CANCEL"));
   assert.ok(ops.includes("SCHEDULE_WAKE"));
 });
 

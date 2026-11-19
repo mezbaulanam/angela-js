@@ -89,6 +89,19 @@ export class StorageContext {
     return intent;
   }
 
+  public recordStat(userId: number | string, key: string, delta = 1): Intent {
+    const intent: Intent = {
+      op: "STORAGE_MUTATE",
+      action: "RECORD_STAT",
+      user_id: Number(userId),
+      key: String(key).slice(0, 48),
+      delta: Math.floor(delta),
+    };
+    this.ctx.addIntent(intent);
+    return intent;
+  }
+
   public set_cooldown = this.setCooldown.bind(this);
+  public record_stat = this.recordStat.bind(this);
 }
 

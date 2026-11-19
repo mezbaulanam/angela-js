@@ -1,10 +1,13 @@
 import { AIContext, MediaContext } from "./ai.js";
 import { CanvasContext } from "./canvas.js";
+import { ChannelContext } from "./channel.js";
 import { DiscordContext, HTTPContext, StorageContext } from "./http.js";
 import { EconomyContext } from "./economy.js";
 import { InventoryContext } from "./inventory.js";
 import { LobbyContext } from "./lobby.js";
 import { Args, type ArgsData, type Intent, Session, type SessionData, User, type UserData } from "./models.js";
+import { PermissionsContext } from "./permissions.js";
+import { TimerContext } from "./timer.js";
 import { UIContext } from "./ui.js";
 
 export interface EventPayload {
@@ -47,6 +50,9 @@ export class Context {
   public http: HTTPContext;
   public discord: DiscordContext;
   public storage: StorageContext;
+  public channel: ChannelContext;
+  public perms: PermissionsContext;
+  public timer: TimerContext;
 
   constructor(rawEvent: EventPayload = {}) {
     this.rawEvent = rawEvent;
@@ -75,6 +81,9 @@ export class Context {
     this.http = new HTTPContext(this);
     this.discord = new DiscordContext(this);
     this.storage = new StorageContext(this);
+    this.channel = new ChannelContext(this);
+    this.perms = new PermissionsContext(this);
+    this.timer = new TimerContext(this);
   }
 
   public get hostId(): number {
