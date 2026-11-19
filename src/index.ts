@@ -17,5 +17,5 @@ export * from "./permissions.js";
 export * from "./timer.js";
 export * from "./ui.js";
 
-export const VERSION = "0.3.0";
+export const VERSION = "0.3.1";
 
